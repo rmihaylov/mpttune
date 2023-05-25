@@ -108,40 +108,227 @@ You may also finetune a base model yourself. First, you need to download a datas
 ```
 $ wget https://github.com/gururise/AlpacaDataCleaned/raw/main/alpaca_data_cleaned.json
 ```
-You may now finetune the `mpt-7b-storywriter-4bit` model on this dataset.
-```
-$ mpttune finetune \
-    --model=mpt-7b-storywriter-4bit \
-    --weights=./model.safetensors \
-    --dataset=./alpaca_data_cleaned.json \
-    --data_type=alpaca \
-    --lora_out_dir=./mpt-7b-storywriter-4bit-alpaca/ \
-    --mbatch_size=1 \
-    --batch_size=2 \
-    --epochs=3 \
-    --lr=3e-4 \
-    --cutoff_len=256 \
-    --lora_r=8 \
-    --lora_alpha=16 \
-    --lora_dropout=0.05 \
-    --warmup_steps=5 \
-    --save_steps=50 \
-    --save_total_limit=3 \
-    --logging_steps=5 \
-    --target_modules='["Wqkv"]'
-```
-The above command will use LoRA to finetune the quantized model. The final adapters and the checkpoints will be saved in `mpt-7b-storywriter-4bit-alpaca` and available for generation as follows:
-```
-$ mpttune generate \
-    --interactive \
-    --model mpt-7b-storywriter-4bit \
-    --weights model.safetensors \
-    --lora_apply_dir mpt-7b-storywriter-4bit-alpaca \
-    --max_new_tokens=50 \
-    --use_cache \
-    --do_sample \
-    --instruction "How to prepare pasta?"
-```
+
+You can finetune any model of the MPT family:
+
+<details>
+<summary>MPT-7B</summary>
+<br>
+
+    $ wget https://huggingface.co/mosaicml/mpt-7b/resolve/main/pytorch_model-00001-of-00002.bin
+    $ wget https://huggingface.co/mosaicml/mpt-7b/resolve/main/pytorch_model-00002-of-00002.bin
+    $ wget https://huggingface.co/mosaicml/mpt-7b/raw/main/pytorch_model.bin.index.json
+    
+    $ mpttune finetune \
+        --model=mpt-7b \
+        --weights=pytorch_model.bin.index.json \
+        --dataset=./alpaca_data_cleaned.json \
+        --data_type=alpaca \
+        --lora_out_dir=./mpt-7b-alpaca/ \
+        --mbatch_size=1 \
+        --batch_size=2 \
+        --epochs=3 \
+        --lr=3e-4 \
+        --cutoff_len=256 \
+        --lora_r=8 \
+        --lora_alpha=16 \
+        --lora_dropout=0.05 \
+        --warmup_steps=5 \
+        --save_steps=50 \
+        --save_total_limit=3 \
+        --logging_steps=5 \
+        --target_modules='["Wqkv"]'
+
+    The above commands will download the model and use LoRA to finetune the quantized model. The final adapters and the checkpoints will be saved in `mpt-7b-alpaca` and available for generation as follows:
+
+    $ mpttune generate \
+        --interactive \
+        --model mpt-7b \
+        --weights=pytorch_model.bin.index.json \
+        --lora_apply_dir mpt-7b-alpaca \
+        --max_new_tokens=50 \
+        --use_cache \
+        --do_sample \
+        --instruction "How to prepare pasta?"
+
+</details>
+
+
+<details>
+<summary>MPT-7B-INSTRUCT</summary>
+<br>
+
+    $ wget https://huggingface.co/mosaicml/mpt-7b-instruct/resolve/main/pytorch_model-00001-of-00002.bin
+    $ wget https://huggingface.co/mosaicml/mpt-7b-instruct/resolve/main/pytorch_model-00002-of-00002.bin
+    $ wget https://huggingface.co/mosaicml/mpt-7b-instruct/raw/main/pytorch_model.bin.index.json
+    
+    $ mpttune finetune \
+        --model=mpt-7b-instruct \
+        --weights=pytorch_model.bin.index.json \
+        --dataset=./alpaca_data_cleaned.json \
+        --data_type=alpaca \
+        --lora_out_dir=./mpt-7b-instruct-alpaca/ \
+        --mbatch_size=1 \
+        --batch_size=2 \
+        --epochs=3 \
+        --lr=3e-4 \
+        --cutoff_len=256 \
+        --lora_r=8 \
+        --lora_alpha=16 \
+        --lora_dropout=0.05 \
+        --warmup_steps=5 \
+        --save_steps=50 \
+        --save_total_limit=3 \
+        --logging_steps=5 \
+        --target_modules='["Wqkv"]'
+
+    The above commands will download the model and use LoRA to finetune the quantized model. The final adapters and the checkpoints will be saved in `mpt-7b-instruct-alpaca` and available for generation as follows:
+
+    $ mpttune generate \
+        --interactive \
+        --model mpt-7b-instruct \
+        --weights=pytorch_model.bin.index.json \
+        --lora_apply_dir mpt-7b-instruct-alpaca \
+        --max_new_tokens=50 \
+        --use_cache \
+        --do_sample \
+        --instruction "How to prepare pasta?"
+
+</details>
+
+
+<details>
+<summary>MPT-7B-CHAT</summary>
+<br>
+
+    $ wget https://huggingface.co/mosaicml/mpt-7b-chat/resolve/main/pytorch_model-00001-of-00002.bin
+    $ wget https://huggingface.co/mosaicml/mpt-7b-chat/resolve/main/pytorch_model-00002-of-00002.bin
+    $ wget https://huggingface.co/mosaicml/mpt-7b-chat/raw/main/pytorch_model.bin.index.json
+    
+    $ mpttune finetune \
+        --model=mpt-7b-chat \
+        --weights=pytorch_model.bin.index.json \
+        --dataset=./alpaca_data_cleaned.json \
+        --data_type=alpaca \
+        --lora_out_dir=./mpt-7b-chat-alpaca/ \
+        --mbatch_size=1 \
+        --batch_size=2 \
+        --epochs=3 \
+        --lr=3e-4 \
+        --cutoff_len=256 \
+        --lora_r=8 \
+        --lora_alpha=16 \
+        --lora_dropout=0.05 \
+        --warmup_steps=5 \
+        --save_steps=50 \
+        --save_total_limit=3 \
+        --logging_steps=5 \
+        --target_modules='["Wqkv"]'
+
+    The above commands will download the model and use LoRA to finetune the quantized model. The final adapters and the checkpoints will be saved in `mpt-7b-chat-alpaca` and available for generation as follows:
+
+    $ mpttune generate \
+        --interactive \
+        --model mpt-7b-chat \
+        --weights=pytorch_model.bin.index.json \
+        --lora_apply_dir mpt-7b-chat-alpaca \
+        --max_new_tokens=50 \
+        --use_cache \
+        --do_sample \
+        --instruction "How to prepare pasta?"
+
+</details>
+
+
+<details>
+<summary>MPT-7B-STORYWRITER</summary>
+<br>
+
+    $ wget https://huggingface.co/mosaicml/mpt-7b-storywriter/resolve/main/pytorch_model-00001-of-00002.bin
+    $ wget https://huggingface.co/mosaicml/mpt-7b-storywriter/resolve/main/pytorch_model-00002-of-00002.bin
+    $ wget https://huggingface.co/mosaicml/mpt-7b-storywriter/raw/main/pytorch_model.bin.index.json
+    
+    $ mpttune finetune \
+        --model=mpt-7b-storywriter \
+        --weights=pytorch_model.bin.index.json \
+        --dataset=./alpaca_data_cleaned.json \
+        --data_type=alpaca \
+        --lora_out_dir=./mpt-7b-storywriter-alpaca/ \
+        --mbatch_size=1 \
+        --batch_size=2 \
+        --epochs=3 \
+        --lr=3e-4 \
+        --cutoff_len=256 \
+        --lora_r=8 \
+        --lora_alpha=16 \
+        --lora_dropout=0.05 \
+        --warmup_steps=5 \
+        --save_steps=50 \
+        --save_total_limit=3 \
+        --logging_steps=5 \
+        --target_modules='["Wqkv"]'
+
+    The above commands will download the model and use LoRA to finetune the quantized model. The final adapters and the checkpoints will be saved in `mpt-7b-storywriter-alpaca` and available for generation as follows:
+
+    $ mpttune generate \
+        --interactive \
+        --model mpt-7b-storywriter \
+        --weights=pytorch_model.bin.index.json \
+        --lora_apply_dir mpt-7b-storywriter-alpaca \
+        --max_new_tokens=50 \
+        --use_cache \
+        --do_sample \
+        --instruction "How to prepare pasta?"
+
+</details>
+
+
+<details>
+<summary>MPT-7B-STORYWRITER-4BIT-128G</summary>
+<br>
+
+    $ wget https://huggingface.co/OccamRazor/mpt-7b-storywriter-4bit-128g/resolve/main/model.safetensors
+    
+    $ mpttune finetune \
+        --model=mpt-7b-storywriter-4bit \
+        --weights=./model.safetensors \
+        --dataset=./alpaca_data_cleaned.json \
+        --data_type=alpaca \
+        --lora_out_dir=./mpt-7b-storywriter-4bit-alpaca/ \
+        --mbatch_size=1 \
+        --batch_size=2 \
+        --epochs=3 \
+        --lr=3e-4 \
+        --cutoff_len=256 \
+        --lora_r=8 \
+        --lora_alpha=16 \
+        --lora_dropout=0.05 \
+        --warmup_steps=5 \
+        --save_steps=50 \
+        --save_total_limit=3 \
+        --logging_steps=5 \
+        --target_modules='["Wqkv"]'
+
+    The above commands will download the model and use LoRA to finetune the quantized model. The final adapters and the checkpoints will be saved in `mpt-7b-storywriter-4bit-alpaca` and available for generation as follows:
+
+    $ mpttune generate \
+        --interactive \
+        --model mpt-7b-storywriter-4bit \
+        --weights model.safetensors \
+        --lora_apply_dir mpt-7b-storywriter-4bit-alpaca \
+        --max_new_tokens=50 \
+        --use_cache \
+        --do_sample \
+        --instruction "How to prepare pasta?"
+
+</details>
+
+
+
+
+
+
+
 
 
 ## Todos

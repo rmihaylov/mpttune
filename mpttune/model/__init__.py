@@ -1,8 +1,13 @@
-from mpttune.model.mpt.config import MPT7B4BitConfig
+from mpttune.model.mpt.config import (
+    MPT7BConfig, MPT7BChatConfig, MPT7BInstructConfig, MPT7BStorywriter4BitConfig, MPT7BStorywriterConfig)
 
 
 MODEL_CONFIGS = {
-    MPT7B4BitConfig.name: MPT7B4BitConfig,
+    MPT7BConfig.name: MPT7BConfig,
+    MPT7BChatConfig.name: MPT7BChatConfig,
+    MPT7BInstructConfig.name: MPT7BInstructConfig,
+    MPT7BStorywriterConfig.name: MPT7BStorywriterConfig,
+    MPT7BStorywriter4BitConfig.name: MPT7BStorywriter4BitConfig,
 }
 
 
