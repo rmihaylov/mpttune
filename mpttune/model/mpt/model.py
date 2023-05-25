@@ -972,7 +972,14 @@ def load_model(llm_config, checkpoint, half=False, backend='triton'):
         model = MPTForCausalLM(config)
         model = model.eval()
 
-        make_quant(model, find_layers(model), llm_config.bits, llm_config.groupsize, quantlinear_class=ql.QuantLinear)
+        if llm_config.bits and llm_config.groupsize:
+            make_quant(
+                model,
+                find_layers(model),
+                llm_config.bits,
+                llm_config.groupsize,
+                quantlinear_class=ql.QuantLinear
+            )
 
     model = accelerate.load_checkpoint_and_dispatch(
         model=model, checkpoint=checkpoint, device_map=llm_config.device_map,
