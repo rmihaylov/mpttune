@@ -2,9 +2,8 @@ import re
 import torch
 import warnings
 
-import bitsandbytes as bnb
 from peft.tuners import lora
-from peft.tuners.lora import Linear, LoraLayer, Linear8bitLt
+from peft.tuners.lora import Linear, LoraLayer
 from peft import PeftModel, get_peft_model
 from peft.utils import _get_submodules, PeftType
 from transformers.pytorch_utils import Conv1D
@@ -124,18 +123,22 @@ class GPTQLoraModel(lora.LoraModel):
                         lora_config.init_lora_weights,
                     )
                 else:
-                    if loaded_in_8bit and isinstance(target, bnb.nn.Linear8bitLt):
-                        kwargs.update(
-                            {
-                                "has_fp16_weights": target.state.has_fp16_weights,
-                                "memory_efficient_backward": target.state.memory_efficient_backward,
-                                "threshold": target.state.threshold,
-                                "index": target.index,
-                            }
-                        )
-                        new_module = Linear8bitLt(
-                            adapter_name, target.in_features, target.out_features, bias=bias, **kwargs
-                        )
+                    if loaded_in_8bit:
+                        import bitsandbytes as bnb
+                        from peft.tuners.lora import Linear8bitLt
+
+                        if isinstance(target, bnb.nn.Linear8bitLt):
+                            kwargs.update(
+                                {
+                                    "has_fp16_weights": target.state.has_fp16_weights,
+                                    "memory_efficient_backward": target.state.memory_efficient_backward,
+                                    "threshold": target.state.threshold,
+                                    "index": target.index,
+                                }
+                            )
+                            new_module = Linear8bitLt(
+                                adapter_name, target.in_features, target.out_features, bias=bias, **kwargs
+                            )
 
                     elif isinstance(target, QuantLinearBase):
                         assert not loaded_in_8bit
