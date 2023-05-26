@@ -2,7 +2,7 @@ class MPT7BConfig:
     name = 'mpt-7b'
     hf_config_name = "mosaicml/mpt-7b"
     hf_tokenizer_config = "EleutherAI/gpt-neox-20b"
-    bits = None
+    bits = 8
     groupsize = None
     max_seq_len = 2048
     attn_impl = 'torch'
@@ -13,7 +13,7 @@ class MPT7BInstructConfig:
     name = 'mpt-7b-instruct'
     hf_config_name = "mosaicml/mpt-7b-instruct"
     hf_tokenizer_config = "EleutherAI/gpt-neox-20b"
-    bits = None
+    bits = 8
     groupsize = None
     max_seq_len = 2048
     attn_impl = 'torch'
@@ -24,7 +24,7 @@ class MPT7BChatConfig:
     name = 'mpt-7b-chat'
     hf_config_name = "mosaicml/mpt-7b-chat"
     hf_tokenizer_config = "EleutherAI/gpt-neox-20b"
-    bits = None
+    bits = 8
     groupsize = None
     max_seq_len = 2048
     attn_impl = 'torch'
@@ -35,7 +35,7 @@ class MPT7BStorywriterConfig:
     name = 'mpt-7b-storywriter'
     hf_config_name = "mosaicml/mpt-7b-storywriter"
     hf_tokenizer_config = "EleutherAI/gpt-neox-20b"
-    bits = None
+    bits = 8
     groupsize = None
     max_seq_len = 5 * 2048
     attn_impl = 'torch'

@@ -15,7 +15,7 @@ from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutpu
 from transformers.utils import logging
 from einops import rearrange
 
-from mpttune.backend.base import make_quant, find_layers
+from mpttune.backend.base import replace_4bit_linear, replace_8bit_linear, find_layers
 
 logger = logging.get_logger("transformers")
 
@@ -955,8 +955,6 @@ class MPTForCausalLM(MPTPreTrainedModel):
 
 
 def load_model(llm_config, checkpoint, half=False, backend='triton'):
-    ql = importlib.import_module(f'mpttune.backend.{backend}.quantlinear')
-
     with accelerate.init_empty_weights():
         config = MPTConfig.from_pretrained(llm_config.hf_config_name)
         config.max_seq_len = llm_config.max_seq_len
@@ -972,13 +970,22 @@ def load_model(llm_config, checkpoint, half=False, backend='triton'):
         model = MPTForCausalLM(config)
         model = model.eval()
 
-        if llm_config.bits and llm_config.groupsize:
-            make_quant(
+        if (llm_config.bits == 4) and llm_config.groupsize:
+            ql = importlib.import_module(f'mpttune.backend.{backend}.quantlinear')
+
+            replace_4bit_linear(
                 model,
                 find_layers(model),
                 llm_config.bits,
                 llm_config.groupsize,
                 quantlinear_class=ql.QuantLinear
+            )
+
+        elif llm_config.bits == 8:
+            model = replace_8bit_linear(
+                model,
+                threshold=6.0,
+                module_to_not_convert=""
             )
 
     model = accelerate.load_checkpoint_and_dispatch(
