@@ -987,10 +987,20 @@ def load_model(llm_config, checkpoint, half=False, backend='triton'):
         )
 
     elif llm_config.bits == 8:
-        model = MPTForCausalLM.from_pretrained(llm_config.hf_config_name, config=config, load_in_8bit=True)
+        model = MPTForCausalLM.from_pretrained(
+            llm_config.hf_config_name,
+            config=config,
+            load_in_8bit=True,
+            device_map=llm_config.device_map
+        )
 
     else:
-        model = MPTForCausalLM.from_pretrained(llm_config.hf_config_name, config=config, torch_dtype=torch.bfloat16)
+        model = MPTForCausalLM.from_pretrained(
+            llm_config.hf_config_name,
+            config=config,
+            torch_dtype=torch.bfloat16,
+            device_map=llm_config.device_map
+        )
 
     if config.no_bias:
         for module in model.modules():
