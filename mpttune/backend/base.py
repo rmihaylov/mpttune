@@ -3,8 +3,6 @@ import numpy as np
 
 import torch
 import torch.nn as nn
-from accelerate import init_empty_weights
-import bitsandbytes as bnb
 
 
 def replace_4bit_linear(module, names, bits, groupsize, quantlinear_class, name=''):
@@ -20,23 +18,6 @@ def replace_4bit_linear(module, names, bits, groupsize, quantlinear_class, name=
 
     for name1, child in module.named_children():
         replace_4bit_linear(child, names, bits, groupsize, quantlinear_class, name + '.' + name1 if name != '' else name1)
-
-
-def replace_8bit_linear(model, threshold=6.0, module_to_not_convert=""):
-    for name, module in model.named_children():
-        if len(list(module.children())) > 0:
-            replace_8bit_linear(module, threshold, module_to_not_convert)
-
-        if isinstance(module, nn.Linear) and (name != module_to_not_convert):
-            with init_empty_weights():
-                model._modules[name] = bnb.nn.Linear8bitLt(
-                    module.in_features,
-                    module.out_features,
-                    module.bias is not None,
-                    has_fp16_weights=False,
-                    threshold=threshold,
-                )
-    return model
 
 
 def find_layers(module, layers=[nn.Linear], name=''):

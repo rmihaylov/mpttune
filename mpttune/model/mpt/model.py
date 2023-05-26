@@ -15,7 +15,7 @@ from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutpu
 from transformers.utils import logging
 from einops import rearrange
 
-from mpttune.backend.base import replace_4bit_linear, replace_8bit_linear, find_layers
+from mpttune.backend.base import replace_4bit_linear, find_layers
 
 logger = logging.get_logger("transformers")
 
@@ -955,23 +955,23 @@ class MPTForCausalLM(MPTPreTrainedModel):
 
 
 def load_model(llm_config, checkpoint, half=False, backend='triton'):
-    with accelerate.init_empty_weights():
-        config = MPTConfig.from_pretrained(llm_config.hf_config_name)
-        config.max_seq_len = llm_config.max_seq_len
+    config = MPTConfig.from_pretrained(llm_config.hf_config_name)
+    config.max_seq_len = llm_config.max_seq_len
 
-        assert config.attn_config['attn_impl'] in ['torch', 'triton']
-        config.attn_config['attn_impl'] = llm_config.attn_impl
+    assert config.attn_config['attn_impl'] in ['torch', 'triton']
+    config.attn_config['attn_impl'] = llm_config.attn_impl
 
-        assert config.attn_config['alibi'] is True
+    assert config.attn_config['alibi'] is True
 
-        if half:
-            torch.set_default_dtype(torch.half)
+    if half:
+        torch.set_default_dtype(torch.half)
 
-        model = MPTForCausalLM(config)
-        model = model.eval()
-
-        if (llm_config.bits == 4) and llm_config.groupsize:
+    if (llm_config.bits == 4) and llm_config.groupsize:
+        with accelerate.init_empty_weights():
             ql = importlib.import_module(f'mpttune.backend.{backend}.quantlinear')
+
+            model = MPTForCausalLM(config)
+            model = model.eval()
 
             replace_4bit_linear(
                 model,
@@ -981,17 +981,16 @@ def load_model(llm_config, checkpoint, half=False, backend='triton'):
                 quantlinear_class=ql.QuantLinear
             )
 
-        elif llm_config.bits == 8:
-            model = replace_8bit_linear(
-                model,
-                threshold=6.0,
-                module_to_not_convert=""
-            )
+        model = accelerate.load_checkpoint_and_dispatch(
+            model=model, checkpoint=checkpoint, device_map=llm_config.device_map,
+            no_split_module_classes=["MPTBlock"]
+        )
 
-    model = accelerate.load_checkpoint_and_dispatch(
-        model=model, checkpoint=checkpoint, device_map=llm_config.device_map,
-        no_split_module_classes=["MPTBlock"]
-    )
+    elif llm_config.bits == 8:
+        model = MPTForCausalLM.from_pretrained(llm_config.hf_config_name, config=config, load_in_8bit=True)
+
+    else:
+        model = MPTForCausalLM.from_pretrained(llm_config.hf_config_name, config=config, torch_dtype=torch.bfloat16)
 
     if config.no_bias:
         for module in model.modules():
