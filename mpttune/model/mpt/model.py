@@ -986,6 +986,8 @@ def load_model(llm_config, checkpoint, half=False, backend='triton'):
             no_split_module_classes=["MPTBlock"]
         )
 
+        model.loaded_in_4bit = True
+
     elif llm_config.bits == 8:
         model = MPTForCausalLM.from_pretrained(
             checkpoint,
@@ -993,6 +995,7 @@ def load_model(llm_config, checkpoint, half=False, backend='triton'):
             load_in_8bit=True,
             device_map=llm_config.device_map
         )
+        model.loaded_in_8bit = True
 
     else:
         model = MPTForCausalLM.from_pretrained(
@@ -1001,6 +1004,7 @@ def load_model(llm_config, checkpoint, half=False, backend='triton'):
             torch_dtype=torch.bfloat16,
             device_map=llm_config.device_map
         )
+        model.loaded_in_bf16 = True
 
     if config.no_bias:
         for module in model.modules():

@@ -77,7 +77,8 @@ def finetune(args):
         ddp=tune_config.ddp
     )
 
-    model_to_half(model, cast_model=False)
+    if getattr(model, 'loaded_in_4bit', False):
+        model_to_half(model, cast_model=False)
 
     model.print_trainable_parameters()
 
