@@ -1,12 +1,12 @@
 from mpttune.model.mpt.config import (
-    MPT7BConfig, MPT7BChatConfig, MPT7BInstructConfig, MPT7BStorywriter4BitConfig, MPT7BStorywriterConfig)
+    MPT7B8bitConfig, MPT7BChat8bitConfig, MPT7BInstruct8bitConfig, MPT7BStorywriter4BitConfig, MPT7BStorywriter8bitConfig)
 
 
 MODEL_CONFIGS = {
-    MPT7BConfig.name: MPT7BConfig,
-    MPT7BChatConfig.name: MPT7BChatConfig,
-    MPT7BInstructConfig.name: MPT7BInstructConfig,
-    MPT7BStorywriterConfig.name: MPT7BStorywriterConfig,
+    MPT7B8bitConfig.name: MPT7B8bitConfig,
+    MPT7BChat8bitConfig.name: MPT7BChat8bitConfig,
+    MPT7BInstruct8bitConfig.name: MPT7BInstruct8bitConfig,
+    MPT7BStorywriter8bitConfig.name: MPT7BStorywriter8bitConfig,
     MPT7BStorywriter4BitConfig.name: MPT7BStorywriter4BitConfig,
 }
 

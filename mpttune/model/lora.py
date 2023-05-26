@@ -2,8 +2,9 @@ import re
 import torch
 import warnings
 
+import bitsandbytes as bnb
 from peft.tuners import lora
-from peft.tuners.lora import Linear, LoraLayer
+from peft.tuners.lora import Linear, LoraLayer, Linear8bitLt
 from peft import PeftModel, get_peft_model
 from peft.utils import _get_submodules, PeftType
 from transformers.pytorch_utils import Conv1D
@@ -93,7 +94,8 @@ class Linear4bitLt(QuantLinearBase, LoraLayer):
 class GPTQLoraModel(lora.LoraModel):
     def _find_and_replace(self, adapter_name):
         lora_config = self.peft_config[adapter_name]
-        loaded_in_8bit = False
+        loaded_in_8bit = getattr(self.model, "is_loaded_in_8bit", False)
+
         is_target_modules_in_base_model = False
         kwargs = {
             "r": lora_config.r,
@@ -122,10 +124,22 @@ class GPTQLoraModel(lora.LoraModel):
                         lora_config.init_lora_weights,
                     )
                 else:
-                    if loaded_in_8bit:
-                        raise NotImplementedError('Loading in 8bit is not implemented')
+                    if loaded_in_8bit and isinstance(target, bnb.nn.Linear8bitLt):
+                        kwargs.update(
+                            {
+                                "has_fp16_weights": target.state.has_fp16_weights,
+                                "memory_efficient_backward": target.state.memory_efficient_backward,
+                                "threshold": target.state.threshold,
+                                "index": target.index,
+                            }
+                        )
+                        new_module = Linear8bitLt(
+                            adapter_name, target.in_features, target.out_features, bias=bias, **kwargs
+                        )
 
                     elif isinstance(target, QuantLinearBase):
+                        assert not loaded_in_8bit
+
                         new_module = Linear4bitLt(
                             adapter_name=adapter_name,
                             in_features=target.infeatures,

@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 
-def make_quant(module, names, bits, groupsize, quantlinear_class, name=''):
+def replace_4bit_linear(module, names, bits, groupsize, quantlinear_class, name=''):
     if isinstance(module, quantlinear_class):
         return
 
@@ -17,17 +17,15 @@ def make_quant(module, names, bits, groupsize, quantlinear_class, name=''):
             setattr(module, attr, quantlinear_class(bits, groupsize, tmp.in_features, tmp.out_features))
 
     for name1, child in module.named_children():
-        make_quant(child, names, bits, groupsize, quantlinear_class, name + '.' + name1 if name != '' else name1)
+        replace_4bit_linear(child, names, bits, groupsize, quantlinear_class, name + '.' + name1 if name != '' else name1)
 
 
-def find_layers(module, layers=[nn.Conv2d, nn.Linear], name=''):
+def find_layers(module, layers=[nn.Linear], name=''):
     if type(module) in layers:
         return {name: module}
     res = {}
     for name1, child in module.named_children():
-        res.update(find_layers(
-            child, layers=layers, name=name + '.' + name1 if name != '' else name1
-        ))
+        res.update(find_layers(child, layers=layers, name=name + '.' + name1 if name != '' else name1))
     return res
 
 

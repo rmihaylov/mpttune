@@ -9,3 +9,4 @@ accelerate==0.19.0
 safetensors==0.3.1
 einops==0.6.1
 wandb==0.15.3
+bitsandbytes==0.39.0

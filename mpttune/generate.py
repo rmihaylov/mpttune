@@ -40,12 +40,16 @@ def format_output(raw_output):
 
 
 def generate(args):
-    model, tokenizer = load_model(args.model, args.weights, backend=args.backend)
+    model, tokenizer = load_model(
+        args.model,
+        args.weights,
+        backend=args.backend)
 
     if args.lora_apply_dir is not None:
         model = load_adapter(model, lora_apply_dir=args.lora_apply_dir)
 
-    model_to_half(model)
+    if getattr(model, 'loaded_in_4bit', False):
+        model_to_half(model)
 
     logger.debug('Apply AMP Wrapper ...')
     wrapper = AMPWrapper(model)

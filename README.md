@@ -115,13 +115,9 @@ You can finetune any model of the MPT family:
 <summary>MPT-7B</summary>
 <br>
 
-    $ wget https://huggingface.co/mosaicml/mpt-7b/resolve/main/pytorch_model-00001-of-00002.bin
-    $ wget https://huggingface.co/mosaicml/mpt-7b/resolve/main/pytorch_model-00002-of-00002.bin
-    $ wget https://huggingface.co/mosaicml/mpt-7b/raw/main/pytorch_model.bin.index.json
-    
     $ mpttune finetune \
         --model=mpt-7b \
-        --weights=pytorch_model.bin.index.json \
+        --weights=mosaicml/mpt-7b \
         --dataset=./alpaca_data_cleaned.json \
         --data_type=alpaca \
         --lora_out_dir=./mpt-7b-alpaca/ \
@@ -144,9 +140,9 @@ You can finetune any model of the MPT family:
     $ mpttune generate \
         --interactive \
         --model mpt-7b \
-        --weights=pytorch_model.bin.index.json \
+        --weights mosaicml/mpt-7b \
         --lora_apply_dir mpt-7b-alpaca \
-        --max_new_tokens=50 \
+        --max_new_tokens 50 \
         --use_cache \
         --do_sample \
         --instruction "How to prepare pasta?"
@@ -158,13 +154,9 @@ You can finetune any model of the MPT family:
 <summary>MPT-7B-INSTRUCT</summary>
 <br>
 
-    $ wget https://huggingface.co/mosaicml/mpt-7b-instruct/resolve/main/pytorch_model-00001-of-00002.bin
-    $ wget https://huggingface.co/mosaicml/mpt-7b-instruct/resolve/main/pytorch_model-00002-of-00002.bin
-    $ wget https://huggingface.co/mosaicml/mpt-7b-instruct/raw/main/pytorch_model.bin.index.json
-    
     $ mpttune finetune \
         --model=mpt-7b-instruct \
-        --weights=pytorch_model.bin.index.json \
+        --weights=mosaicml/mpt-7b-instruct \
         --dataset=./alpaca_data_cleaned.json \
         --data_type=alpaca \
         --lora_out_dir=./mpt-7b-instruct-alpaca/ \
@@ -187,9 +179,9 @@ You can finetune any model of the MPT family:
     $ mpttune generate \
         --interactive \
         --model mpt-7b-instruct \
-        --weights=pytorch_model.bin.index.json \
+        --weights mosaicml/mpt-7b-instruct \
         --lora_apply_dir mpt-7b-instruct-alpaca \
-        --max_new_tokens=50 \
+        --max_new_tokens 50 \
         --use_cache \
         --do_sample \
         --instruction "How to prepare pasta?"
@@ -201,13 +193,9 @@ You can finetune any model of the MPT family:
 <summary>MPT-7B-CHAT</summary>
 <br>
 
-    $ wget https://huggingface.co/mosaicml/mpt-7b-chat/resolve/main/pytorch_model-00001-of-00002.bin
-    $ wget https://huggingface.co/mosaicml/mpt-7b-chat/resolve/main/pytorch_model-00002-of-00002.bin
-    $ wget https://huggingface.co/mosaicml/mpt-7b-chat/raw/main/pytorch_model.bin.index.json
-    
     $ mpttune finetune \
         --model=mpt-7b-chat \
-        --weights=pytorch_model.bin.index.json \
+        --weights=mosaicml/mpt-7b-chat \
         --dataset=./alpaca_data_cleaned.json \
         --data_type=alpaca \
         --lora_out_dir=./mpt-7b-chat-alpaca/ \
@@ -230,9 +218,9 @@ You can finetune any model of the MPT family:
     $ mpttune generate \
         --interactive \
         --model mpt-7b-chat \
-        --weights=pytorch_model.bin.index.json \
+        --weights mosaicml/mpt-7b-chat\
         --lora_apply_dir mpt-7b-chat-alpaca \
-        --max_new_tokens=50 \
+        --max_new_tokens 50 \
         --use_cache \
         --do_sample \
         --instruction "How to prepare pasta?"
@@ -244,13 +232,9 @@ You can finetune any model of the MPT family:
 <summary>MPT-7B-STORYWRITER</summary>
 <br>
 
-    $ wget https://huggingface.co/mosaicml/mpt-7b-storywriter/resolve/main/pytorch_model-00001-of-00002.bin
-    $ wget https://huggingface.co/mosaicml/mpt-7b-storywriter/resolve/main/pytorch_model-00002-of-00002.bin
-    $ wget https://huggingface.co/mosaicml/mpt-7b-storywriter/raw/main/pytorch_model.bin.index.json
-    
     $ mpttune finetune \
         --model=mpt-7b-storywriter \
-        --weights=pytorch_model.bin.index.json \
+        --weights=mosaicml/mpt-7b-storywriter \
         --dataset=./alpaca_data_cleaned.json \
         --data_type=alpaca \
         --lora_out_dir=./mpt-7b-storywriter-alpaca/ \
@@ -273,9 +257,9 @@ You can finetune any model of the MPT family:
     $ mpttune generate \
         --interactive \
         --model mpt-7b-storywriter \
-        --weights=pytorch_model.bin.index.json \
+        --weights mosaicml/mpt-7b-storywriter \
         --lora_apply_dir mpt-7b-storywriter-alpaca \
-        --max_new_tokens=50 \
+        --max_new_tokens 50 \
         --use_cache \
         --do_sample \
         --instruction "How to prepare pasta?"
