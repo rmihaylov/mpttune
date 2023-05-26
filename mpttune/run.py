@@ -6,6 +6,7 @@ from mpttune.generate import generate
 
 from mpttune.model import MODEL_CONFIGS
 from mpttune.backend import BACKENDS
+from mpttune.data import DATA_TYPES
 
 
 def get_args():
@@ -42,7 +43,7 @@ def get_args():
     # Model args group
     tune_parser.add_argument('--model', choices=MODEL_CONFIGS, required=True, help='Type of model to load')
     tune_parser.add_argument('--weights', type=str, required=True, help="Path to the quantized model in huggingface format. Default: %(default)s")
-    tune_parser.add_argument("--data_type", choices=["alpaca", "gpt4all"], help="Dataset format", default="alpaca")
+    tune_parser.add_argument("--data_type", choices=DATA_TYPES, help="Dataset format", default="alpaca")
     tune_parser.add_argument("--dataset", required=False, help="Path to local dataset file.")
     tune_parser.add_argument("--lora_out_dir", default="alpaca_lora", required=False, help="Directory to place new LoRA. Default: %(default)s")
     tune_parser.add_argument("--lora_apply_dir", default=None, required=False, help="Path to directory from which LoRA has to be applied before training. Default: %(default)s")

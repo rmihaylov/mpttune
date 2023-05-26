@@ -1,4 +1,3 @@
-import os
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 
@@ -209,3 +208,9 @@ def load_data(config, tokenizer):
 
     data.prepare_data(use_eos_token=config.use_eos_token)
     return data
+
+
+DATA_TYPES = [
+    "alpaca",
+    "gpt4all",
+]
