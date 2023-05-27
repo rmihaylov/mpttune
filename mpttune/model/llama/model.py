@@ -152,7 +152,7 @@ class LlamaAttention(nn.Module):
         self.k_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
         self.v_proj = nn.Linear(self.hidden_size, self.num_heads * self.head_dim, bias=False)
         self.o_proj = nn.Linear(self.num_heads * self.head_dim, self.hidden_size, bias=False)
-        self.rotary_emb = LlamaRotaryEmbedding(self.head_dim, max_position_embeddings=self.max_position_embeddings)
+        # self.rotary_emb = LlamaRotaryEmbedding(self.head_dim, max_position_embeddings=self.max_position_embeddings)
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
         return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
@@ -165,6 +165,7 @@ class LlamaAttention(nn.Module):
         past_key_value: Optional[Tuple[torch.Tensor]] = None,
         output_attentions: bool = False,
         use_cache: bool = False,
+        attn_bias: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         bsz, q_len, _ = hidden_states.size()
 
@@ -175,8 +176,9 @@ class LlamaAttention(nn.Module):
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
             kv_seq_len += past_key_value[0].shape[-2]
-        cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+
+        # cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
+        # query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
         # [bsz, nh, t, hd]
 
         if past_key_value is not None:
@@ -186,23 +188,45 @@ class LlamaAttention(nn.Module):
 
         past_key_value = (key_states, value_states) if use_cache else None
 
+        if attn_bias is not None:
+            attn_bias = attn_bias[:, :, -query_states.size(1):, -key_states.size(1):]
+
+        (b, _, s_q, d) = query_states.shape
+        (_, _, s_k, _) = key_states.shape
+
         attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
 
-        if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
-            raise ValueError(
-                f"Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is"
-                f" {attn_weights.size()}"
-            )
+        if attn_bias is not None:
+            if attn_bias.size(-1) != 1 and attn_bias.size(-1) != s_k or (
+                    attn_bias.size(-2) != 1 and attn_bias.size(-2) != s_q):
+                raise RuntimeError(
+                    f'attn_bias (shape: {attn_bias.shape}) is expected to broadcast to shape: {attn_weights.shape}.')
+            attn_weights = attn_weights + attn_bias
 
-        if attention_mask is not None:
-            if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
-                raise ValueError(
-                    f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
-                )
-            attn_weights = attn_weights + attention_mask
-            attn_weights = torch.max(
-                attn_weights, torch.tensor(torch.finfo(attn_weights.dtype).min, device=attn_weights.device)
-            )
+        # if attn_weights.size() != (bsz, self.num_heads, q_len, kv_seq_len):
+        #     raise ValueError(
+        #         f"Attention weights should be of size {(bsz, self.num_heads, q_len, kv_seq_len)}, but is"
+        #         f" {attn_weights.size()}"
+        #     )
+
+        # if attention_mask is not None:
+        #     if attention_mask.size() != (bsz, 1, q_len, kv_seq_len):
+        #         raise ValueError(
+        #             f"Attention mask should be of size {(bsz, 1, q_len, kv_seq_len)}, but is {attention_mask.size()}"
+        #         )
+        #     attn_weights = attn_weights + attention_mask
+        #     attn_weights = torch.max(
+        #         attn_weights, torch.tensor(torch.finfo(attn_weights.dtype).min, device=attn_weights.device)
+        #     )
+
+        if True:  # is_causal:
+            s = max(s_q, s_k)
+            causal_mask = attn_weights.new_ones(s, s, dtype=torch.float16)
+            causal_mask = causal_mask.tril()
+            causal_mask = causal_mask.to(torch.bool)
+            causal_mask = ~causal_mask
+            causal_mask = causal_mask[-s_q:, -s_k:]
+            attn_weights = attn_weights.masked_fill(causal_mask.view(1, 1, s_q, s_k), min_val)
 
         # upcast attention to fp32
         attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
@@ -242,25 +266,12 @@ class LlamaDecoderLayer(nn.Module):
         self,
         hidden_states: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
+        attn_bias: Optional[torch.Tensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         past_key_value: Optional[Tuple[torch.Tensor]] = None,
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
-        """
-        Args:
-            hidden_states (`torch.FloatTensor`): input to the layer of shape `(batch, seq_len, embed_dim)`
-            attention_mask (`torch.FloatTensor`, *optional*): attention mask of size
-                `(batch, 1, tgt_len, src_len)` where padding elements are indicated by very large negative values.
-            output_attentions (`bool`, *optional*):
-                Whether or not to return the attentions tensors of all attention layers. See `attentions` under
-                returned tensors for more detail.
-            use_cache (`bool`, *optional*):
-                If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding
-                (see `past_key_values`).
-            past_key_value (`Tuple(torch.FloatTensor)`, *optional*): cached past key and value projection states
-        """
-
         residual = hidden_states
 
         hidden_states = self.input_layernorm(hidden_states)
@@ -273,6 +284,7 @@ class LlamaDecoderLayer(nn.Module):
             past_key_value=past_key_value,
             output_attentions=output_attentions,
             use_cache=use_cache,
+            attn_bias=attn_bias,
         )
         hidden_states = residual + hidden_states
 
@@ -316,6 +328,42 @@ class LlamaPreTrainedModel(PreTrainedModel):
             module.gradient_checkpointing = value
 
 
+def gen_slopes(n_heads, alibi_bias_max=8, device=None):
+    _n_heads = 2 ** math.ceil(math.log2(n_heads))
+    m = torch.arange(1, _n_heads + 1, dtype=torch.float32, device=device)
+    m = m.mul(alibi_bias_max / _n_heads)
+    slopes = 1.0 / torch.pow(2, m)
+    if _n_heads != n_heads:
+        slopes = torch.concat([slopes[1::2], slopes[::2]])[:n_heads]
+    return slopes.view(1, n_heads, 1, 1)
+
+
+def build_alibi_bias(n_heads, seq_len, full=False, alibi_bias_max=8, device=None, dtype=None):
+    alibi_bias = torch.arange(1 - seq_len, 1, dtype=torch.int32, device=device).view(1, 1, 1, seq_len)
+
+    if full:
+        alibi_bias = alibi_bias - torch.arange(1 - seq_len, 1, dtype=torch.int32, device=device).view(1, 1, seq_len, 1)
+        alibi_bias = alibi_bias.abs().mul(-1)
+
+    slopes = gen_slopes(n_heads, alibi_bias_max, device=device)
+    alibi_bias = alibi_bias * slopes
+    return alibi_bias.to(dtype=dtype)
+
+
+def build_attn_bias(attn_bias, n_heads, seq_len, causal=False, alibi_bias_max=8):
+    (device, dtype) = (attn_bias.device, attn_bias.dtype)
+    attn_bias = attn_bias.add(
+        build_alibi_bias(
+            n_heads,
+            seq_len,
+            full=not causal,
+            alibi_bias_max=alibi_bias_max,
+            device=device,
+            dtype=dtype)
+    )
+    return attn_bias
+
+
 class LlamaModel(LlamaPreTrainedModel):
     """
     Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`LlamaDecoderLayer`]
@@ -333,6 +381,13 @@ class LlamaModel(LlamaPreTrainedModel):
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.gradient_checkpointing = False
+
+        self.attn_bias = None
+
+        self.attn_bias_shape = (1, config.n_heads, 1, config.max_seq_len)
+
+        self._attn_bias_initialized = False
+
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -365,6 +420,50 @@ class LlamaModel(LlamaPreTrainedModel):
             )
 
         return combined_attention_mask
+
+    @torch.no_grad()
+    def _attn_bias(
+            self,
+            device,
+            dtype,
+            attention_mask: Optional[torch.ByteTensor] = None,
+            prefix_mask: Optional[torch.ByteTensor] = None,
+            sequence_id: Optional[torch.LongTensor] = None):
+
+        if not self._attn_bias_initialized:
+            if self.attn_bias_shape:
+                self.attn_bias = torch.zeros(self.attn_bias_shape, device=device, dtype=dtype)
+
+                self.attn_bias = build_attn_bias(
+                    self.attn_bias,
+                    self.config.n_heads,
+                    self.config.max_seq_len,
+                    causal=True,
+                    alibi_bias_max=self.alibi_bias_max)
+
+            self._attn_bias_initialized = True
+
+        if self.attn_bias is not None:
+            self.attn_bias = self.attn_bias.to(dtype=dtype, device=device)
+
+        attn_bias = self.attn_bias
+
+        if attention_mask is not None:
+            s_k = attention_mask.shape[-1]
+
+            if attn_bias is None:
+                attn_bias = torch.zeros((1, 1, 1, s_k), device=device, dtype=dtype)
+            else:
+                attn_bias = attn_bias[:, :, :, -s_k:]
+
+            if prefix_mask is not None and attention_mask.shape != prefix_mask.shape:
+                raise ValueError(
+                    f'attention_mask shape={attention_mask.shape} ' + f'and prefix_mask shape={prefix_mask.shape} are not equal.')
+
+            min_val = torch.finfo(attn_bias.dtype).min
+            attn_bias = attn_bias.masked_fill(~attention_mask.view(-1, 1, 1, s_k), min_val)
+
+        return (attn_bias, None)
 
     def forward(
         self,
@@ -415,13 +514,14 @@ class LlamaModel(LlamaPreTrainedModel):
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
         # embed positions
-        if attention_mask is None:
-            attention_mask = torch.ones(
-                (batch_size, seq_length_with_past), dtype=torch.bool, device=inputs_embeds.device
-            )
-        attention_mask = self._prepare_decoder_attention_mask(
-            attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-        )
+
+        if attention_mask is not None:
+            attention_mask = attention_mask.bool()
+
+        (attn_bias, attention_mask) = self._attn_bias(
+            device=inputs_embeds.device,
+            dtype=inputs_embeds.dtype,
+            attention_mask=attention_mask)
 
         hidden_states = inputs_embeds
 
@@ -456,6 +556,7 @@ class LlamaModel(LlamaPreTrainedModel):
                     create_custom_forward(decoder_layer),
                     hidden_states,
                     attention_mask,
+                    attn_bias,
                     position_ids,
                     None,
                 )
@@ -463,6 +564,7 @@ class LlamaModel(LlamaPreTrainedModel):
                 layer_outputs = decoder_layer(
                     hidden_states,
                     attention_mask=attention_mask,
+                    attn_bias=attn_bias,
                     position_ids=position_ids,
                     past_key_value=past_key_value,
                     output_attentions=output_attentions,
