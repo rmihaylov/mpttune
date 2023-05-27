@@ -5,7 +5,6 @@ class LLama7B4BitConfig:
     bits = 4
     groupsize = 128
     max_seq_len = 2048
-    attn_impl = 'torch'
     device_map = "auto"
 
 
@@ -16,7 +15,6 @@ class LLama13B4BitConfig:
     bits = 4
     groupsize = 128
     max_seq_len = 2048
-    attn_impl = 'torch'
     device_map = "auto"
 
 
@@ -27,7 +25,6 @@ class LLama30B4BitConfig:
     bits = 4
     groupsize = 128
     max_seq_len = 2048
-    attn_impl = 'torch'
     device_map = "auto"
 
 
@@ -38,5 +35,4 @@ class LLama65B4BitConfig:
     bits = 4
     groupsize = 128
     max_seq_len = 2048
-    attn_impl = 'torch'
     device_map = "auto"
