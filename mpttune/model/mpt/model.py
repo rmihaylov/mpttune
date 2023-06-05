@@ -874,7 +874,10 @@ class MPTForCausalLM(MPTPreTrainedModel):
 
         hidden_states = outputs[0]
 
-        logits = F.linear(hidden_states, self.transformer.wte.weight)
+        #logits = F.linear(hidden_states, self.transformer.wte.weight) #unparallelizable
+        logits = F.linear(
+            outputs.last_hidden_state.to(self.transformer.wte.weight.device),
+            self.transformer.wte.weight) #parallel OK
         if self.logit_scale is not None:
             if self.logit_scale == 0:
                 warnings.warn(
